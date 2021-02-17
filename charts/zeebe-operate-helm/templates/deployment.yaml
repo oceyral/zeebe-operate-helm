@@ -6,6 +6,8 @@ metadata:
     app: {{ include "zeebe-operate.fullname" . }}
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: {{ include "zeebe-operate.fullname" . }}
@@ -14,6 +16,16 @@ spec:
       labels:
         app: {{ include "zeebe-operate.fullname" . }}
     spec:
+      {{- if .Values.automaticMigration }}
+      initContainers:
+      - name: {{ .Chart.Name }}-migrate
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command: ['/bin/sh','/usr/local/operate/bin/migrate']
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/operate/config/application.yml
+          subPath: application.yml
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
